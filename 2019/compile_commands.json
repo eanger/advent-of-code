@@ -1,0 +1,47 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-c",
+      "-g",
+      "-O2",
+      "-std=gnu++17",
+      "-o",
+      "day1",
+      "day1.cc"
+    ],
+    "directory": "/Users/eriang01/personal/advent-of-code/2019",
+    "file": "/Users/eriang01/personal/advent-of-code/2019/day1.cc",
+    "output": "/Users/eriang01/personal/advent-of-code/2019/day1"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-c",
+      "-g",
+      "-O2",
+      "-std=gnu++17",
+      "-o",
+      "day2",
+      "day2.cc"
+    ],
+    "directory": "/Users/eriang01/personal/advent-of-code/2019",
+    "file": "/Users/eriang01/personal/advent-of-code/2019/day2.cc",
+    "output": "/Users/eriang01/personal/advent-of-code/2019/day2"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-c",
+      "-g",
+      "-O2",
+      "-std=gnu++17",
+      "-o",
+      "day3",
+      "day3.cc"
+    ],
+    "directory": "/Users/eriang01/personal/advent-of-code/2019",
+    "file": "/Users/eriang01/personal/advent-of-code/2019/day3.cc",
+    "output": "/Users/eriang01/personal/advent-of-code/2019/day3"
+  }
+]

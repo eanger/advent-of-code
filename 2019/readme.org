@@ -1,0 +1,3 @@
+Single makefile to build one binary for each day (each cpp).
+Maybe the make test target will determine the oldest file and try running it?
+Something simple to start.
