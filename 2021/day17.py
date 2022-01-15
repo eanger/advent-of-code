@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 
+# ACTUAL
 xmin = 79
 xmax = 137
 ymin = -176
 ymax = -117
 
-xmin = 20
-xmax = 30
-ymin = -10
-ymax = -5
+# SAMPLE???
+# xmin = 20
+# xmax = 30
+# ymin = -10
+# ymax = -5
 
 # Part 1
 # each step reduces x vel by 1
@@ -21,7 +23,7 @@ for x in range(100):
     if xmin <= val <= xmax:
         possible.append(x)
 
-print(possible)
+# print(possible)
 
 # y vel decreases by 1 each step
 
@@ -66,16 +68,51 @@ def step(pos):
 # way to calc pairs of (yvel,t) that land in ymin--ymax??
 
 
-# for xval in possible:
+# # for xval in possible:
+# positions = 0
+# # for xval in range(14, xmax + 2):
+# for xval in range(1, xmax + 2):
+#     # try y vals, see how high it gets
+#     for y in range(1, 1000):
+#         pos = Pos(0, 0, xval, y)
+#         while pos.y >= ymin:
+#             step(pos)
+#             if ymin <= pos.y <= ymax and xmin <= pos.x <= xmax:
+#                 positions += 1
+#                 break
+# print(positions)
+
+# smallest x value: such that it reaches 0 velocity
+# n + (n - 1) + (n - 2) .. 0
+# (n + 0)/2 + (n-1 + 1)/2
+# n(n+1)/2, 6=>21
+# n(n+1)/2 = xmin
+
+minxvel = 0
+while True:
+    # s = n*(n+1)/2
+    val = int(1 / 2 * (minxvel + 1) * minxvel)
+    if val >= xmin:
+        break
+    minxvel += 1
+maxxvel=xmax
+print(f"{minxvel=}")
+print(f"{maxxvel=}")
+
+# smallest y value: bottom left corner of trench
+minyvel=ymin
+print(f"{minyvel=}")
+
+maxyvel=None
+print(f"{maxyvel=}")
+
 positions = 0
-# for xval in range(14, xmax + 2):
-for xval in range(1, xmax + 2):
-    # try y gals, see how high it gets
-    for y in range(1, 1000):
+for xval in range(minxvel, maxxvel + 1):
+    for y in range(minyvel, 1000):
         pos = Pos(0, 0, xval, y)
         while pos.y >= ymin:
             step(pos)
             if ymin <= pos.y <= ymax and xmin <= pos.x <= xmax:
                 positions += 1
                 break
-print(positions)
+print(f"{positions=}")
