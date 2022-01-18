@@ -34,6 +34,56 @@ ROTATIONS = [
     lambda pos: Pos(-pos.y, pos.z, -pos.x),
     lambda pos: Pos(pos.z, pos.y, -pos.x),
     lambda pos: Pos(pos.y, -pos.z, -pos.x)]
+# ROTATIONS = [
+#     lambda pos: Pos(pos.x, pos.y, pos.z),
+#     lambda pos: Pos(pos.x, pos.y, -pos.z),
+#     lambda pos: Pos(pos.x, -pos.y, pos.z),
+#     lambda pos: Pos(pos.x, -pos.y, -pos.z),
+#     lambda pos: Pos(-pos.x, pos.y, pos.z),
+#     lambda pos: Pos(-pos.x, pos.y, -pos.z),
+#     lambda pos: Pos(-pos.x, -pos.y, pos.z),
+#     lambda pos: Pos(-pos.x, -pos.y, -pos.z),
+#     lambda pos: Pos(pos.z, pos.x, pos.y),
+#     lambda pos: Pos(pos.z, pos.x, -pos.y),
+#     lambda pos: Pos(pos.z, -pos.x, pos.y),
+#     lambda pos: Pos(pos.z, -pos.x, -pos.y),
+#     lambda pos: Pos(-pos.z, pos.x, pos.y),
+#     lambda pos: Pos(-pos.z, pos.x, -pos.y),
+#     lambda pos: Pos(-pos.z, -pos.x, pos.y),
+#     lambda pos: Pos(-pos.z, -pos.x, -pos.y),
+#     lambda pos: Pos(pos.y, pos.z, pos.x),
+#     lambda pos: Pos(pos.y, pos.z, -pos.x),
+#     lambda pos: Pos(pos.y, -pos.z, pos.x),
+#     lambda pos: Pos(pos.y, -pos.z, -pos.x),
+#     lambda pos: Pos(-pos.y, pos.z, pos.x),
+#     lambda pos: Pos(-pos.y, pos.z, -pos.x),
+#     lambda pos: Pos(-pos.y, -pos.z, pos.x),
+#     lambda pos: Pos(-pos.y, -pos.z, -pos.x),
+#     lambda pos: Pos(pos.x, pos.z, pos.y),
+#     lambda pos: Pos(pos.x, pos.z, -pos.y),
+#     lambda pos: Pos(pos.x, -pos.z, pos.y),
+#     lambda pos: Pos(pos.x, -pos.z, -pos.y),
+#     lambda pos: Pos(-pos.x, pos.z, pos.y),
+#     lambda pos: Pos(-pos.x, pos.z, -pos.y),
+#     lambda pos: Pos(-pos.x, -pos.z, pos.y),
+#     lambda pos: Pos(-pos.x, -pos.z, -pos.y),
+#     lambda pos: Pos(pos.y, pos.x, pos.z),
+#     lambda pos: Pos(pos.y, pos.x, -pos.z),
+#     lambda pos: Pos(pos.y, -pos.x, pos.z),
+#     lambda pos: Pos(pos.y, -pos.x, -pos.z),
+#     lambda pos: Pos(-pos.y, pos.x, pos.z),
+#     lambda pos: Pos(-pos.y, pos.x, -pos.z),
+#     lambda pos: Pos(-pos.y, -pos.x, pos.z),
+#     lambda pos: Pos(-pos.y, -pos.x, -pos.z),
+#     lambda pos: Pos(pos.z, pos.y, pos.x),
+#     lambda pos: Pos(pos.z, pos.y, -pos.x),
+#     lambda pos: Pos(pos.z, -pos.y, pos.x),
+#     lambda pos: Pos(pos.z, -pos.y, -pos.x),
+#     lambda pos: Pos(-pos.z, pos.y, pos.x),
+#     lambda pos: Pos(-pos.z, pos.y, -pos.x),
+#     lambda pos: Pos(-pos.z, -pos.y, pos.x),
+#     lambda pos: Pos(-pos.z, -pos.y, -pos.x)
+# ]
 
 @dataclass(frozen=True)
 class Pos:
@@ -90,6 +140,8 @@ class Scanner:
         find two beacons with unique distance that overlap
         can this help us determine rotation?
         normalize to a single direction, then we can calculate the rotation from self to other
+
+        returns: rotation index, rel position, beacons rel to self
         '''
         that = other.distances[:]
         matches = []
@@ -100,12 +152,12 @@ class Scanner:
                     del that[i]
                     break
         if len(matches) >= 66:
-            m = matches[1]
-            this_vec = self.beacons[m[1]] - self.beacons[m[0]]
-            other_vec = other.beacons[m[3]] - other.beacons[m[2]]
-            for i, lam in enumerate(ROTATIONS):
-                if this_vec == lam(other_vec):
-                    return i, self.beacons[m[1]] - lam(other.beacons[m[3]]), [lam(v) for v in other.beacons]
+            for m in matches:
+                this_vec = self.beacons[m[1]] - self.beacons[m[0]]
+                other_vec = other.beacons[m[3]] - other.beacons[m[2]]
+                for i, rot in enumerate(ROTATIONS):
+                    if this_vec == rot(other_vec):
+                        return i, self.beacons[m[1]] - rot(other.beacons[m[3]]), [rot(v) for v in other.beacons]
             print("ERROR: unreachable")
             print(this_vec)
             print(other_vec)
@@ -135,33 +187,120 @@ squared distance from each point to every other point
 if at least 12 choose 2 (66) are the same value, these overlap
 '''
 
-cur_scanner = scanners[0]
-rest_scanners = scanners[1:]
-# This is relative to the prior scanner, not scanner 0!
-scanner_positions = [Pos(0, 0, 0)]
-basis = Pos(0, 0, 0)
-beacon_positions = set(cur_scanner.beacons)
+
+# for j, cur in enumerate(scanners):
+#     links = []
+#     for idx, candidate in enumerate(scanners):
+#         overlaps = cur.relative_distance_to(candidate)
+#         if overlaps:
+#             links.append(idx)
+#     print(f'{j}: {links}')
+
+'''
+build a graph starting from scanner0 of connections
+maybe map scanner->position rel to scanner0
+worklist = [scanner0]
 while rest_scanners:
-    success = False
-    for idx, candidate in enumerate(rest_scanners):
-        overlaps = cur_scanner.relative_distance_to(candidate)
+    pop item work_item off worklist
+    for candidate in rest_scanners:
+        if work_item overlaps candidate:
+            determine beacon positions
+            add candidate to worklist
+            remove from rest_scanners
+'''
+rest_scanners = scanners[1:]
+world = {scanners[0]: Pos(0, 0, 0)}
+beacon_positions = set(scanners[0].beacons)
+worklist = [scanners[0]]
+while rest_scanners:
+    work_item = worklist.pop()
+    new_worklist_items = []
+    for cand in rest_scanners:
+        overlaps = work_item.relative_distance_to(cand)
         if overlaps:
-            success = True
-            print('a')
-            # print(overlaps)
-    if success:
-        print('b')
-        cur_scanner = candidate
-        del rest_scanners[idx]
-    else:
-        print('aaaaa')
-        break
-            # rot, pos, beacs = overlaps
-            # scanner_positions.append(pos)
-            # for beacon in beacs:
-            #     beacon_positions.add(beacon + basis)
-            # cur_scanner = candidate
-            # basis = basis + pos
-            # rest_scanners.remove(candidate)
-            # break
+            # print('found overlap')
+            # returns: rotation index, rel position, beacons rel to self
+            rot, pos, beacs = overlaps
+            world[cand] = world[work_item] + pos
+            new_worklist_items.append(cand)
+            for beac in beacs:
+                beacon_positions.add(beac + world[work_item])
+    for e in new_worklist_items:
+        worklist.append(e)
+        rest_scanners.remove(e)
+
+a, b, c = scanners[0].relative_distance_to(scanners[1])
+print(b)
+'''
+b is scanner1 position in scanner0's frame of reference
+a is how to rotate scanner1 to get to scanner 0
+e is scanner4 position in scanner1's frame of reference
+d is how to rotate scanner4 to get to scanner 1
+rot_a(e) is scanner4's position rel to scanner 0
+h is scanner2 position in scanner4's frame of reference
+g is how to rotate scanner2 to get to scanner 4
+
+
+affine transformations?
+rot_a(rot_b(x)) commutative? nope
+
+
+
+a(d(g(x)))
+'''
+# rot0 = ROTATIONS[a]
+d, e, f = scanners[1].relative_distance_to(scanners[4])
+# print(e)
+# rot1 = ROTATIONS[d]
+# print(ROTATIONS[a](e) + b)
+g, h, i = scanners[4].relative_distance_to(scanners[2])
+
+
+# rot4 = ROTATIONS[g]
+# print(rot1(rot0(h)) + e)
+# print(h)
+# print(ROTATIONS[d](h) + e)
 # print(len(beacon_positions))
+# pprint(world.values())
+# for w in world.values():
+#     print(w)
+# # pprint(beacon_positions)
+
+
+
+
+
+# This is relative to the prior scanner, not scanner 0!
+# scanner_positions = [Pos(0, 0, 0)]
+# basis = Pos(0, 0, 0)
+# beacon_positions = set(cur_scanner.beacons)
+# while rest_scanners:
+#     print(f"finding next scanner out of {len(rest_scanners)}")
+#     found = False
+#     for idx, candidate in enumerate(rest_scanners):
+#         print(f'check {idx}')
+#         overlaps = cur_scanner.relative_distance_to(candidate)
+#         if overlaps:
+#             print('found overlap')
+#             found = True
+#             rot, pos, beacs = overlaps
+#             scanner_positions.append(pos)
+#             for beacon in beacs:
+#                 beacon_positions.add(beacon + basis)
+#             cur_scanner = candidate
+#             basis = basis + pos
+#             # rest_scanners.remove(candidate)
+#             del rest_scanners[idx]
+#             break
+#     if not found:
+#         print("ERROR, none found")
+#         break
+
+# print(len(beacon_positions))
+
+# test should be 0, 1, 4, 2, 3
+# ie,          (0), 0, 2, 0, 0
+# can get list of how everything overlaps
+# is it always a single chain? ie 0 overlaps a single other
+# but the rest overlap at least 2 except for one?
+# nope, just have to add on to known space
