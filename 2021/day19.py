@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-with open('day19.input', 'r') as inp:
+with open('day19a.input', 'r') as inp:
     lines = inp.read()
 chunks = lines.strip().split('\n\n')
 chunk_lines = [chunk.split('\n')[1:] for chunk in chunks]
