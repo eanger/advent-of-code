@@ -182,7 +182,7 @@ while rest_scanners:
             scanner_rotations[cand] = (rot, work_item, pos)
             parent_rot = scanner_rotations[work_item]
             while parent_rot:
-                pos = ROTATIONS[parent_rot[0]](pos)
+                pos = ROTATIONS[parent_rot[0]](pos) + parent_rot[2]
                 beacs = [ROTATIONS[parent_rot[0]](b) + parent_rot[2] for b in beacs]
                 parent_rot = scanner_rotations[parent_rot[1]]
             beacs = set(beacs)
@@ -194,3 +194,14 @@ while rest_scanners:
         rest_scanners.remove(e)
 
 print(len(beacon_positions))
+
+# part 2
+
+'''
+check each scanner pair and calculate absolute difference in position
+'''
+dists = []
+for i in scanner_positions.values():
+    for j in scanner_positions.values():
+        dists.append(i.manhattan_distance(j))
+print(max(dists))
