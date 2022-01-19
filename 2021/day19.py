@@ -185,18 +185,8 @@ determining overlap:
 euclidian squared distance is orientation-independent
 squared distance from each point to every other point
 if at least 12 choose 2 (66) are the same value, these overlap
-'''
 
 
-# for j, cur in enumerate(scanners):
-#     links = []
-#     for idx, candidate in enumerate(scanners):
-#         overlaps = cur.relative_distance_to(candidate)
-#         if overlaps:
-#             links.append(idx)
-#     print(f'{j}: {links}')
-
-'''
 build a graph starting from scanner0 of connections
 maybe map scanner->position rel to scanner0
 worklist = [scanner0]
@@ -209,7 +199,8 @@ while rest_scanners:
             remove from rest_scanners
 '''
 rest_scanners = scanners[1:]
-world = {scanners[0]: Pos(0, 0, 0)}
+scanner_positions = {scanners[0]: Pos(0, 0, 0)}
+scanner_rotations = {scanners[0]: None}
 beacon_positions = set(scanners[0].beacons)
 worklist = [scanners[0]]
 while rest_scanners:
@@ -221,50 +212,46 @@ while rest_scanners:
             # print('found overlap')
             # returns: rotation index, rel position, beacons rel to self
             rot, pos, beacs = overlaps
-            world[cand] = world[work_item] + pos
+            scanner_rotations[cand] = (rot, work_item)
+            parent_rot = scanner_rotations[work_item]
+            while parent_rot:
+                pos = ROTATIONS[parent_rot[0]](pos)
+                beacs = [ROTATIONS[parent_rot[0]](b) for b in beacs]
+                parent_rot = scanner_rotations[parent_rot[1]]
+            beacs = [b + pos for b in beacs]
+            beacon_positions.update(set(beacs))
+            scanner_positions[cand] = pos
             new_worklist_items.append(cand)
-            for beac in beacs:
-                beacon_positions.add(beac + world[work_item])
     for e in new_worklist_items:
         worklist.append(e)
         rest_scanners.remove(e)
 
-a, b, c = scanners[0].relative_distance_to(scanners[1])
-print(b)
 '''
-b is scanner1 position in scanner0's frame of reference
-a is how to rotate scanner1 to get to scanner 0
-e is scanner4 position in scanner1's frame of reference
-d is how to rotate scanner4 to get to scanner 1
-rot_a(e) is scanner4's position rel to scanner 0
-h is scanner2 position in scanner4's frame of reference
-g is how to rotate scanner2 to get to scanner 4
-
-
-affine transformations?
-rot_a(rot_b(x)) commutative? nope
-
-
-
-a(d(g(x)))
 '''
-# rot0 = ROTATIONS[a]
-d, e, f = scanners[1].relative_distance_to(scanners[4])
-# print(e)
-# rot1 = ROTATIONS[d]
-# print(ROTATIONS[a](e) + b)
-g, h, i = scanners[4].relative_distance_to(scanners[2])
+rots = {0: None}
+pos = {0: Pos(0,0,0)}
+rot_1, s1_rel_s0, beacs_1 = scanners[0].relative_distance_to(scanners[1])
+pos[1] = s1_rel_s0
+rots[1] = (rot_1, 0)
+
+# pprint(beacs_1)
+from pprint import pprint
+# for beac in beacs_1:
+#     print(beac + s1_rel_s0)
 
 
-# rot4 = ROTATIONS[g]
-# print(rot1(rot0(h)) + e)
-# print(h)
-# print(ROTATIONS[d](h) + e)
-# print(len(beacon_positions))
-# pprint(world.values())
-# for w in world.values():
-#     print(w)
-# # pprint(beacon_positions)
+
+rot_4, s4_rel_s1, beacs_4 = scanners[1].relative_distance_to(scanners[4])
+pos[4] = ROTATIONS[rots[1][0]](s4_rel_s1)
+rots[4] = (rot_4, 1)
+# beacs_4 = [ROTATIONS[rots[1][0]](b) + pos[4] for b in beacs_4]
+pprint(beacs_4)
+rot_2, s2_rel_s4, _ = scanners[4].relative_distance_to(scanners[2])
+pos[2] = ROTATIONS[rots[rots[4][1]][0]](ROTATIONS[rots[4][0]](s2_rel_s4))
+rots[2] = (rot_2, 4)
+rot_3, s3_rel_s1, _ = scanners[1].relative_distance_to(scanners[3])
+pos[3] = ROTATIONS[rots[1][0]](s3_rel_s1)
+rots[3] = (rot_3, 1)
 
 
 
