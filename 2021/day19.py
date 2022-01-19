@@ -63,6 +63,13 @@ class Pos:
                    self.z * other.x - self.x * other.z,
                    self.x * other.y - self.y * other.x)
 
+    def __lt__(self, other):
+        if self.x == other.x:
+            if self.y == other.y:
+                return self.z < other.z
+            return self.y < other.y
+        return self.x < other.x
+
 
 class Scanner:
     def __init__(self, beacon_list: list[str]):
@@ -93,6 +100,7 @@ class Scanner:
 
         returns: rotation index, rel position, beacons rel to self
         '''
+
         that = other.distances[:]
         matches = []
         for dist, (a, b) in self.distances:
@@ -102,16 +110,24 @@ class Scanner:
                     del that[i]
                     break
         if len(matches) >= 66:
-            for m in matches:
-                this_vec = self.beacons[m[1]] - self.beacons[m[0]]
-                other_vec = other.beacons[m[3]] - other.beacons[m[2]]
-                for i, rot in enumerate(ROTATIONS):
+            '''
+            have to verify match
+            for a specific rotation:
+                count how many of the matches fit when rotated this way
+                should be at least 12
+            '''
+            for i, rot in enumerate(ROTATIONS):
+                count = 0
+                pos = None
+                for m in matches:
+                    this_vec = self.beacons[m[1]] - self.beacons[m[0]]
+                    other_vec = other.beacons[m[3]] - other.beacons[m[2]]
                     if this_vec == rot(other_vec):
+                        count += 1
                         pos = self.beacons[m[1]] - rot(other.beacons[m[3]])
-                        return i, pos, [pos + rot(v) for v in other.beacons]
+                if count >= 12:
+                    return i, pos, [pos + rot(v) for v in other.beacons]
             print("ERROR: unreachable")
-            print(this_vec)
-            print(other_vec)
             return None
         # no match
         return None
@@ -169,6 +185,7 @@ while rest_scanners:
                 pos = ROTATIONS[parent_rot[0]](pos)
                 beacs = [ROTATIONS[parent_rot[0]](b) + parent_rot[2] for b in beacs]
                 parent_rot = scanner_rotations[parent_rot[1]]
+            beacs = set(beacs)
             beacon_positions.update(set(beacs))
             scanner_positions[cand] = pos
             new_worklist_items.append(cand)
