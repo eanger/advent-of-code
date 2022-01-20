@@ -65,51 +65,35 @@ should i just do this recursively
 def round():
     for inc, n_univ in score_counts.items():
         x = round(+inc) * 
+
+
+
+I feel like an idiot for cheating and using this as a guide:
+https://github.com/jonathanpaulson/AdventOfCode/blob/master/2021/21.py
 '''
-score_counts = {}
-for i in [1, 2, 3]:
-    for j in [1, 2, 3]:
-        for k in [1, 2, 3]:
-            count = i + j + k
-            if count in score_counts:
-                score_counts[count] += 1
-            else:
-                score_counts[count] = 1
-print(score_counts)
+maxscore = 21
+seen = {}
+def winner(p1_loc, p2_loc, p1_score, p2_score):
+    if p1_score >= maxscore:
+        return (1, 0)
+    if p2_score >= maxscore:
+        return (0, 1)
+    try:
+        return seen[(p1_loc, p2_loc, p1_score, p2_score)]
+    except KeyError:
+        pass
 
-# p1_loc = {(p1_start, 0): 1}
-# p2_loc = {(p2_start, 0): 1}
-locs = {(p1_start, p2_start, 0, 0): 1}
-# p1_loc = p1_start
-# p2_loc = p2_start
-p1_wins = 0
-p2_wins = 0
-max_score = 8
-while locs:
-    new_locs = {}
-    # print(len(locs))
-    for inc, n_univ in score_counts.items():
-        for (p1_pos, p2_pos, p1_score, p2_score), univs in locs.items():
-            new_pos = pos(p1_pos, inc)
-            new_score = p1_pos + new_pos
-            print(new_score)
-            new_worlds = univs * n_univ
-            if new_score >= max_score:
-                p1_wins += new_worlds
-            else:
-                new_locs[(new_pos, p2_pos, new_score, p2_score)] = new_worlds
+    p1_sum = 0
+    p2_sum = 0
+    for i in [1, 2, 3]:
+        for j in [1, 2, 3]:
+            for k in [1, 2, 3]:
+                new_loc = pos(p1_loc, i + j + k)
+                new_score = p1_score + new_loc
+                p1, p2 = winner(p2_loc, new_loc, p2_score, new_score)
+                p1_sum += p2
+                p2_sum += p1
+    seen[(p1_loc, p2_loc, p1_score, p2_score)] = (p1_sum, p2_sum)
+    return (p1_sum, p2_sum)
 
-    locs = {}
-    # print(len(new_locs))
-    for inc, n_univ in score_counts.items():
-        for (p1_pos, p2_pos, p1_score, p2_score), univs in new_locs.items():
-            new_pos = pos(p2_pos, inc)
-            new_score = p2_pos + new_pos
-            new_worlds = univs * n_univ
-            if new_score >= max_score:
-                p2_wins += new_worlds
-            else:
-                locs[(p1_pos, new_pos, p1_score, new_score)] = new_worlds
-
-print(f"{p1_wins=}")
-print(f"{p2_wins=}")
+print(max(winner(p1_start, p2_start, 0, 0)))
