@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-with open('day20a.input', 'r') as inp:
+with open('day20.input', 'r') as inp:
     lines = inp.readlines()
 lines = [line.strip() for line in lines]
 
@@ -48,14 +48,26 @@ class Image:
             new_grid.append(''.join(row))
         self.grid = new_grid
         # 4. flip oob
-        self.oob = '#' if self.oob == '.' else '#'
+        # self.oob = '#' if self.oob == '.' else '#'
+        self.oob = self.calc_pixel(-1, -1)
+
+    def bits_set(self):
+        count = 0
+        for row in self.grid:
+            for bit in row:
+                if bit == '#':
+                    count += 1
+        return count
 
 
 
 image = Image(lines[2:], lines[0])
-image.enhance()
-image.enhance()
-print(image)
+for i in range(50):
+    # if i % 2 == 0:
+    #     print(f"{i}: {image.bits_set()}")
+    image.enhance()
+# print(image)
+print(image.bits_set())
 
 
 _ = '''
