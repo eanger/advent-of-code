@@ -50,3 +50,66 @@ while True:
 print(loser * die.num_rolls)
 
 # Part 2
+
+_ = '''
+each roll can be 1, 2, or 3
+3^3 options for scores for each roll
+there are however a limited number of unique rolls in this set
+keep map of position+score -> num universes?
+on each round, create new set of position+score -> num universes
+after calcing new scores, pull out those where that player won
+keep going until there are no more positions left to calc
+
+
+should i just do this recursively
+def round():
+    for inc, n_univ in score_counts.items():
+        x = round(+inc) * 
+'''
+score_counts = {}
+for i in [1, 2, 3]:
+    for j in [1, 2, 3]:
+        for k in [1, 2, 3]:
+            count = i + j + k
+            if count in score_counts:
+                score_counts[count] += 1
+            else:
+                score_counts[count] = 1
+print(score_counts)
+
+# p1_loc = {(p1_start, 0): 1}
+# p2_loc = {(p2_start, 0): 1}
+locs = {(p1_start, p2_start, 0, 0): 1}
+# p1_loc = p1_start
+# p2_loc = p2_start
+p1_wins = 0
+p2_wins = 0
+max_score = 8
+while locs:
+    new_locs = {}
+    # print(len(locs))
+    for inc, n_univ in score_counts.items():
+        for (p1_pos, p2_pos, p1_score, p2_score), univs in locs.items():
+            new_pos = pos(p1_pos, inc)
+            new_score = p1_pos + new_pos
+            print(new_score)
+            new_worlds = univs * n_univ
+            if new_score >= max_score:
+                p1_wins += new_worlds
+            else:
+                new_locs[(new_pos, p2_pos, new_score, p2_score)] = new_worlds
+
+    locs = {}
+    # print(len(new_locs))
+    for inc, n_univ in score_counts.items():
+        for (p1_pos, p2_pos, p1_score, p2_score), univs in new_locs.items():
+            new_pos = pos(p2_pos, inc)
+            new_score = p2_pos + new_pos
+            new_worlds = univs * n_univ
+            if new_score >= max_score:
+                p2_wins += new_worlds
+            else:
+                locs[(p1_pos, new_pos, p1_score, new_score)] = new_worlds
+
+print(f"{p1_wins=}")
+print(f"{p2_wins=}")
