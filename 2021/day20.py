@@ -32,24 +32,19 @@ class Image:
         return self.algo[index]
 
     def enhance(self):
-        # 1. extend grid
-        self.grid.insert(0, self.oob * self.width)
-        self.grid.append(self.oob * self.width)
-        self.grid = [''.join([self.oob, row, self.oob]) for row in self.grid]
-        self.width += 2
-        self.height += 2
-        # 2. set up new grid
+        # 1. set up new grid
         new_grid = []
-        # 3. walk through old grid and update new grid based on values
-        for j in range(self.height):
+        # 2. walk through old grid and update new grid based on values
+        for j in range(-1, self.height + 1):
             row = []
-            for i in range(self.width):
+            for i in range(-1, self.width + 1):
                 row.append(self.calc_pixel(i, j))
             new_grid.append(''.join(row))
         self.grid = new_grid
-        # 4. flip oob
-        # self.oob = '#' if self.oob == '.' else '#'
-        self.oob = self.calc_pixel(-1, -1)
+        self.width = len(self.grid[0])
+        self.height = len(self.grid)
+        # 3. flip oob
+        self.oob = self.calc_pixel(-3, -3) # find arbitrary zone outside of image
 
     def bits_set(self):
         count = 0
@@ -63,10 +58,7 @@ class Image:
 
 image = Image(lines[2:], lines[0])
 for i in range(50):
-    # if i % 2 == 0:
-    #     print(f"{i}: {image.bits_set()}")
     image.enhance()
-# print(image)
 print(image.bits_set())
 
 
