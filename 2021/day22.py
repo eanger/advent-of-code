@@ -137,7 +137,8 @@ class Cuboid:
 
 
 cuboids: list[Cuboid] = []
-for (direction, xmin, xmax, ymin, ymax, zmin, zmax) in steps:
+for i, (direction, xmin, xmax, ymin, ymax, zmin, zmax) in enumerate(steps):
+    print(f"{i}/{len(steps)}: {len(cuboids)}")
     step_cuboid = Cuboid(xmin, xmax, ymin, ymax, zmin, zmax)
     new_cuboids = []
     for cuboid in cuboids:
