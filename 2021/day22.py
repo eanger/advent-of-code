@@ -115,24 +115,28 @@ class Cuboid:
                 (self.ymax - self.ymin) *
                 (self.zmax - self.zmin))
 
+    def overlaps(self, other):
+        return (other.xmin <= self.xmax and other.xmax >= self.xmin and
+                other.ymin <= self.ymax and other.ymax >= self.ymin and
+                other.zmin <= self.zmax and other.zmax >= self.zmin)
+
     def differences(self, other):
         '''
         Returns a list of all cuboids contained by other that aren't
         part of self.
+
+        Assumes there's overlap between self and other.
         '''
         res = []
-        if (other.xmin <= self.xmax and other.xmax >= self.xmin and
-            other.ymin <= self.ymax and other.ymax >= self.ymin and
-            other.zmin <= self.zmax and other.zmax >= self.zmin):
-            for xidx, xrule in enumerate(rules):
-                if xvals := xrule(self.xmin, self.xmax, other.xmin, other.xmax):
-                    for yidx, yrule in enumerate(rules):
-                        if yvals := yrule(self.ymin, self.ymax, other.ymin, other.ymax):
-                            for zidx, zrule in enumerate(rules):
-                                if xidx == yidx == zidx == 1:
-                                    continue  # we really don't want the middle
-                                if zvals := zrule(self.zmin, self.zmax, other.zmin, other.zmax):
-                                    res.append(Cuboid(*xvals, *yvals, *zvals))
+        for xidx, xrule in enumerate(rules):
+            if xvals := xrule(self.xmin, self.xmax, other.xmin, other.xmax):
+                for yidx, yrule in enumerate(rules):
+                    if yvals := yrule(self.ymin, self.ymax, other.ymin, other.ymax):
+                        for zidx, zrule in enumerate(rules):
+                            if xidx == yidx == zidx == 1:
+                                continue  # we really don't want the middle
+                            if zvals := zrule(self.zmin, self.zmax, other.zmin, other.zmax):
+                                res.append(Cuboid(*xvals, *yvals, *zvals))
         return res
 
 
@@ -142,10 +146,9 @@ for i, (direction, xmin, xmax, ymin, ymax, zmin, zmax) in enumerate(steps):
     step_cuboid = Cuboid(xmin, xmax, ymin, ymax, zmin, zmax)
     new_cuboids = []
     for cuboid in cuboids:
-        if to_add := step_cuboid.differences(cuboid):
-            new_cuboids.extend(to_add)
-        else:
-            new_cuboids.append(cuboid)
+        if step_cuboid.overlaps(cuboid):
+            l = step_cuboid.differences(cuboid)
+            new_cuboids.extend(l)
 
     if direction == 'on':
         new_cuboids.append(step_cuboid)
