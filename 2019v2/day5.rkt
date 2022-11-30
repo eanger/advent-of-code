@@ -7,46 +7,48 @@
   )
 
 (define (run-intcode prog [input #f])
-  (process prog 0 input '()))
+  (define output '())
+  (define (process ip)
+    (let-values ([(modes opcode) (quotient/remainder (vector-ref prog ip) 100)])
+      (match opcode
+        [1 (binary-op + ip)]
+        [2 (binary-op * ip)]
+        [3 (read-input ip)]
+        [4 (write-output ip)]
+        [99 (reverse output)]
+        [other (printf "UNIMPLEMENTED OPCODE: ~a\n" other) (reverse output)])))
 
-(define (process prog ip input output)
-  (let ([opcode (remainder (vector-ref prog ip) 100)])
-    (match opcode
-      [1 (binary-op + prog ip input output)]
-      [2 (binary-op * prog ip input output)]
-      [3 (read-input prog ip input output)]
-      [4 (write-output prog ip input output)]
-      [99 (reverse output)]
-      [other (printf "UNIMPLEMENTED OPCODE: ~a\n" other) (reverse output)])))
+  (define (binary-op op ip)
+    (let* ([modes (quotient (vector-ref prog ip) 100)]
+           [left (vector-ref prog (+ ip 1))]
+           [left-mode (remainder modes 10)]
+           [left-val (get-val left left-mode)]
+           [right (vector-ref prog (+ ip 2))]
+           [right-mode (remainder (quotient modes 10) 10)]
+           [right-val (get-val right right-mode)]
+           [dest (vector-ref prog (+ ip 3))]
+           [next-ip (+ ip 4)])
+      (vector-set! prog dest (op left-val right-val))
+      (process next-ip)))
 
-(define (binary-op op prog ip input output)
-  (let* ([modes (quotient (vector-ref prog ip) 100)]
-         [left (vector-ref prog (+ ip 1))]
-         [left-mode (remainder modes 10)]
-         [left-val (get-val prog left left-mode)]
-         [right (vector-ref prog (+ ip 2))]
-         [right-mode (remainder (quotient modes 10) 10)]
-         [right-val (get-val prog right right-mode)]
-         [dest (vector-ref prog (+ ip 3))]
-         [next-ip (+ ip 4)])
-    (vector-set! prog dest (op left-val right-val))
-    (process prog next-ip input output)))
+  (define (read-input ip)
+    (let ([addr (vector-ref prog (+ ip 1))])
+      (vector-set! prog addr input)
+      (process (+ ip 2))))
 
-(define (read-input prog ip input output)
-  (let ([addr (vector-ref prog (+ ip 1))])
-    (vector-set! prog addr input)
-    (process prog (+ ip 2) input output)))
+  (define (write-output ip)
+    (let* ([addr (vector-ref prog (+ ip 1))]
+           [val (get-val addr (quotient (vector-ref prog ip) 100))])
+      (set! output (cons val output))
+      (process (+ ip 2))))
 
-(define (write-output prog ip input output)
-  (let* ([addr (vector-ref prog (+ ip 1))]
-         [val (get-val prog addr (quotient (vector-ref prog ip) 100))])
-    (process prog (+ ip 2) input (cons val output))))
+  (define (get-val val mode)
+    (match (remainder mode 10)
+      [0 (vector-ref prog val)]
+      [1 val]
+      [_ (println "BAD MODE") #f]))
 
-(define (get-val prog val mode)
-  (match (remainder mode 10)
-    [0 (vector-ref prog val)]
-    [1 val]
-    [_ (println "BAD MODE") #f]))
+  (process 0))
 
 (define orig-prog (string->intcode (string-trim (file->string "input.day5"))))
 (run-intcode orig-prog 1)
