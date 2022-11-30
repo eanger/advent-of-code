@@ -11,24 +11,21 @@
   (define (process ip)
     (let-values ([(modes opcode) (quotient/remainder (vector-ref prog ip) 100)])
       (match opcode
-        [1 (binary-op + ip)]
-        [2 (binary-op * ip)]
+        [1 (binary-op + ip modes)]
+        [2 (binary-op * ip modes)]
         [3 (read-input ip)]
-        [4 (write-output ip)]
+        [4 (write-output ip modes)]
         [99 (reverse output)]
         [other (printf "UNIMPLEMENTED OPCODE: ~a\n" other) (reverse output)])))
 
-  (define (binary-op op ip)
-    (let* ([modes (quotient (vector-ref prog ip) 100)]
-           [left (vector-ref prog (+ ip 1))]
-           [left-mode (remainder modes 10)]
-           [left-val (get-val left left-mode)]
-           [right (vector-ref prog (+ ip 2))]
-           [right-mode (remainder (quotient modes 10) 10)]
-           [right-val (get-val right right-mode)]
+  (define (binary-op op ip modes)
+    (let* ([left-idx (vector-ref prog (+ ip 1))]
+           [right-idx (vector-ref prog (+ ip 1))]
+           [left (value-by-mode left-idx modes 0)]
+           [right (value-by-mode right-idx modes 1)]
            [dest (vector-ref prog (+ ip 3))]
            [next-ip (+ ip 4)])
-      (vector-set! prog dest (op left-val right-val))
+      (vector-set! prog dest (op left right))
       (process next-ip)))
 
   (define (read-input ip)
@@ -36,17 +33,18 @@
       (vector-set! prog addr input)
       (process (+ ip 2))))
 
-  (define (write-output ip)
+  (define (write-output ip modes)
     (let* ([addr (vector-ref prog (+ ip 1))]
-           [val (get-val addr (quotient (vector-ref prog ip) 100))])
+           [val (value-by-mode addr modes 0)])
       (set! output (cons val output))
       (process (+ ip 2))))
 
-  (define (get-val val mode)
-    (match (remainder mode 10)
-      [0 (vector-ref prog val)]
-      [1 val]
-      [_ (println "BAD MODE") #f]))
+  (define (value-by-mode val modes param-idx)
+    (let-values ([(mode-1 mode-0) (quotient/remainder modes 10)])
+      (match (if (equal? param-idx 0) mode-0 mode-1)
+        [0 (vector-ref prog val)]
+        [1 val]
+        [_ (println "BAD MODE") #f])))
 
   (process 0))
 
