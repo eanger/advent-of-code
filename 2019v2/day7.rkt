@@ -26,12 +26,15 @@
                 65210)
   )
 
-(struct intcode (program ip input output))
+(struct intcode (program ip input output) #:transparent)
 
 (define (vm-ref vm [offset 0])
   (vector-ref (intcode-program vm) (+ (intcode-ip vm) offset)))
 (define (vm-ref-absolute vm absolute)
   (vector-ref (intcode-program vm) absolute))
+
+(define (vm-halted? vm)
+  (= 99 (vm-ref vm)))
 
 (define (binary-op op vm modes)
     (let* ([left-idx (vm-ref vm 1)]
@@ -88,6 +91,12 @@
     (vector-set! (intcode-program vm) dest (if (= left right) 1 0))
     (process (struct-copy intcode vm [ip next-ip]))))
 
+(define (halt vm)
+  (unless (vm-halted? vm)
+    (println "ERROR: VM not halted correctly"))
+  ;; (println vm)
+  vm)
+
 (define (value-by-mode vm val modes param-idx)
   (let-values ([(mode-1 mode-0) (quotient/remainder modes 10)])
     (match (if (equal? param-idx 0) mode-0 mode-1)
@@ -108,7 +117,7 @@
       [6 (jump-if (lambda (x) (= x 0)) vm modes)]
       [7 (less-than vm modes)]
       [8 (is-equal vm modes)]
-      [99 vm]
+      [99 (halt vm)]
       [other (printf "UNIMPLEMENTED OPCODE: ~a\n" other) vm])))
 
 (define orig-prog (string->intcode (string-trim (file->string "input.day7"))))
@@ -140,17 +149,41 @@
 
 (define (max-thrust-p1 prog)
   (apply max (map (lambda (p) (run5-linear prog p)) (permutations '(0 1 2 3 4)))))
-(max-thrust-p1 orig-prog)
+;; (max-thrust-p1 orig-prog)
 
 ; part 2
 
-;; (run5-linear orig-prog (list 0 1 2 3 4))
-;; (define (p1 amp1 amp2 amp3 amp4 amp5)
-;;   (if (andmap vm-halted? (list amp1 amp2 amp3 amp4 amp5))
-;;   (let ([new1 (process amp1)]
-;;         [new2 (process amp2)]
-;;         [new3 (process amp3)]
-;;         [new4 (process amp4)]
-;;         [new5 (process amp5)])
-;;     (struct-copy intcode new1 [input (intcode-output new2)])
-;;     (p1 new1 new2 new3 new4 new5))))
+(module+ test
+  (require rackunit)
+  (check-equal? (max-thrust-p2 (string->intcode "3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5")
+                               ;; (list 9 8 7 6 5))
+                               )
+                139629729)
+  (check-equal? (max-thrust-p2 (string->intcode "3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10")
+                               ;; (list 9 7 8 5 6))
+                               )
+                18216)
+  )
+(define (max-thrust-p2 prog)
+  (apply max (map (lambda (p) (test-permute-p2 prog p)) (permutations '(5 6 7 8 9)))))
+
+(define (test-permute-p2 prog permute)
+  (let* ([vm1 (process (intcode (vector-copy prog) 0 (first permute) #f))]
+         [vm2 (process (intcode (vector-copy prog) 0 (second permute) #f))]
+         [vm3 (process (intcode (vector-copy prog) 0 (third permute) #f))]
+         [vm4 (process (intcode (vector-copy prog) 0 (fourth permute) #f))]
+         [vm5 (process (intcode (vector-copy prog) 0 (fifth permute) #f))])
+    (process-next (list vm1 vm2 vm3 vm4 vm5) '() 0)))
+
+(define (process-next todo completed output)
+  (if (andmap vm-halted? todo)
+      (intcode-output (fifth todo))
+      (let* ([done (process (struct-copy intcode (car todo) [input output]))]
+             [done-output (intcode-output done)]
+             [leftover (cdr todo)]
+             [new-completed (cons done completed)])
+        (if (empty? leftover)
+            (process-next (reverse new-completed) '() done-output)
+            (process-next leftover new-completed done-output)))))
+
+(max-thrust-p2 orig-prog)
