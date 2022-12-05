@@ -12,3 +12,6 @@
 
 (define (string->intcode str)
   (list->vector (map string->number (string-split str ","))))
+
+(define (string->vector str)
+  (list->vector (map string->number (string-split str ","))))

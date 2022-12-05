@@ -3,65 +3,88 @@
 
 (module+ test
   (require rackunit)
-  (check-equal? (intcode-ref-mode (make-intcode #(203 0)) 0) 203)
-  (check-equal? (intcode-ref-mode (make-intcode #(203 1)) 0) 1)
-  (check-equal? (intcode-ref-mode (intcode #(203 0 0 0 123) 0 #f #f 4) 0) 123)
+  (check-equal? (intcode-ref-mode (make-intcode #(203 0)) 0 #t) 203)
+  (check-equal? (intcode-ref-mode (make-intcode #(203 1)) 0 #t) 1)
+  (check-equal? (intcode-ref-mode (intcode #(203 0 0 0 123) 0 #f #f 4) 0 #t) 123)
+  (check-equal? (intcode-output (process (make-intcode #(104 1125899906842624 99)))) '(1125899906842624))
+  (check-equal? (reverse (intcode-output (process (make-intcode #(109 1 204 -1 1001 100 1 100 1008 100 16 101 1006 101 0 99))))) '(109 1 204 -1 1001 100 1 100 1008 100 16 101 1006 101 0 99))
   )
 
-(struct intcode (program ip input output base) #:transparent)
+(struct intcode ([program #:mutable] ip input output base) #:transparent)
 
-(define (make-intcode prog)
-  (intcode prog 0 #f #f 0))
+(define (make-intcode prog [input #f])
+  (intcode (vector-copy prog) 0 input '() 0))
 
 (define (intcode-ref vm [offset 0])
-  (vector-ref (intcode-program vm) (+ (intcode-ip vm) offset)))
+  (intcode-ref-absolute vm (+ (intcode-ip vm) offset)))
+
+(define (intcode-program-write vm addr val)
+  (let ([_ (intcode-ref-absolute vm addr)])
+    (vector-set! (intcode-program vm) addr val)))
 
 (define (intcode-ref-absolute vm absolute)
+  (when (>= absolute (vector-length (intcode-program vm)))
+    (let ([new-prog (make-vector (add1 absolute))])
+      (vector-copy! new-prog 0 (intcode-program vm))
+      (set-intcode-program! vm new-prog)))
   (vector-ref (intcode-program vm) absolute))
 
-(define (intcode-ref-mode vm param-num)
+(define (intcode-ref-mode vm param-num deref?)
   (let* ([val (intcode-ref vm (add1 param-num))]
          [instr (intcode-ref vm)]
          [all-modes (quotient instr 100)]
          [mode (remainder (quotient all-modes (expt 10 param-num)) 10)])
+    ;; (printf "~a ~a ~a ~a\n" val instr all-modes mode)
     (match mode
-      [0 (intcode-ref-absolute vm val)]
+      [0 (if deref? (intcode-ref-absolute vm val) val)]
       [1 val]
-      [2 (intcode-ref-absolute vm (+ val (intcode-base vm)))]
+      [2 (if deref? (intcode-ref-absolute vm (+ val (intcode-base vm))) val)]
       [_ (println "BAD MODE") #f])))
 
 (define (intcode-halted? vm)
   (= 99 (intcode-ref vm)))
 
-(define (binary-op op left right dest vm)
-    (let ([res (op left right)]
-          [next-ip (+ (intcode-ip vm) 4)])
-      (vector-set! (intcode-program vm) dest res)
-      (process (struct-copy intcode vm [ip next-ip]))))
+(define (binary-op op vm)
+  (let* ([left (intcode-ref-mode vm 0 #t)]
+         [right (intcode-ref-mode vm 1 #t)]
+         [dest (intcode-ref-mode vm 2 #f)]
+         [res (op left right)]
+         [next-ip (+ (intcode-ip vm) 4)])
+    (printf "~a ~a ~a\n" left right dest)
+    (intcode-program-write vm dest res)
+    (process (struct-copy intcode vm [ip next-ip]))))
 
-(define (read-input addr vm)
+(define (read-input vm)
   (if (intcode-input vm)
-      (begin
-        (vector-set! (intcode-program vm) addr (intcode-input vm))
+      (let ([addr (intcode-ref-mode vm 0 #f)])
+        (intcode-program-write vm addr (intcode-input vm))
         (process (struct-copy intcode vm
                               [ip (+ (intcode-ip vm) 2)]
                               [input #f])))
       vm))
 
-(define (write-output val vm)
-  (process (struct-copy intcode vm
-                        [ip (+ (intcode-ip vm) 2)]
-                        [output val])))
+(define (write-output vm)
+  (let ([val (intcode-ref-mode vm 0 #t)])
+    (process (struct-copy intcode vm
+                          [ip (+ (intcode-ip vm) 2)]
+                          [output (cons val (intcode-output vm))]))))
 
-(define (jump-if predicate cond-val dest-val vm)
-  (process (struct-copy intcode vm [ip (if (predicate cond-val)
-                                           dest-val
-                                           (+ (intcode-ip vm) 3))])))
+(define (jump-if predicate vm)
+  (let ([cond-val (intcode-ref-mode vm 0 #t)]
+        [dest-val (intcode-ref-mode vm 1 #t)])
+    (process (struct-copy intcode vm [ip (if (predicate cond-val)
+                                             dest-val
+                                             (+ (intcode-ip vm) 3))]))))
+
+(define (rel-base vm)
+  (let ([increment (intcode-ref-mode vm 0 #t)])
+    (process (struct-copy intcode vm
+                          [ip (+ (intcode-ip vm) 2)]
+                          [base (+ (intcode-base vm) increment)]))))
 
 (define (halt vm)
   (unless (intcode-halted? vm)
     (println "ERROR: VM not halted correctly"))
-  ;; (println vm)
   vm)
 
 (define (eq0 x) (= x 0))
@@ -70,20 +93,19 @@
 (define (is-equal left right) (if (= left right) 1 0))
 
 (define (process vm)
-  (let ([opcode (remainder (intcode-ref vm) 100)]
-        [p1 (intcode-ref-mode vm 0)]
-        [p2 (intcode-ref-mode vm 1)]
-        [p3 (intcode-ref-mode vm 2)])
+  (let ([opcode (remainder (intcode-ref vm) 100)])
     (match opcode
-      [1 (binary-op + p1 p2 p3 vm)]
-      [2 (binary-op * p1 p2 p3 vm)]
-      [3 (read-input p1 vm)]
-      [4 (write-output p1 vm)]
-      [5 (jump-if eq0 p1 p2 vm)]
-      [6 (jump-if neq0 p1 p2 vm)]
-      [7 (binary-op less-than p1 p2 p3 vm)]
-      [8 (binary-op is-equal p1 p2 p3 vm)]
+      [1 (binary-op + vm)]
+      [2 (binary-op * vm)]
+      [3 (read-input vm)]
+      [4 (write-output vm)]
+      [5 (jump-if neq0 vm)]
+      [6 (jump-if eq0 vm)]
+      [7 (binary-op less-than vm)]
+      [8 (binary-op is-equal vm)]
+      [9 (rel-base vm)]
       [99 (halt vm)]
       [other (printf "UNIMPLEMENTED OPCODE: ~a\n" other) vm])))
 
-(define orig-prog (string->intcode (string-trim (file->string "input.day9"))))
+(define orig-prog (string->vector (string-trim (file->string "input.day9"))))
+(intcode-output (process (make-intcode orig-prog 1)))
