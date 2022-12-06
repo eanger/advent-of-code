@@ -131,3 +131,4 @@
 
 (define orig-prog (string->vector (string-trim (file->string "input.day9"))))
 (intcode-output (process (make-intcode orig-prog 1)))
+(intcode-output (process (make-intcode orig-prog 2)))
