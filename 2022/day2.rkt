@@ -4,7 +4,10 @@
   (require rackunit)
   (check-equal? (total-score "A Y
 B X
-C Z") 15))
+C Z") 15)
+  (check-equal? (total-score-p2 "A Y
+B X
+C Z") 12))
 
 (define (total-score guide)
   (let ([games (parse-guide guide)])
@@ -34,3 +37,32 @@ C Z") 15))
    (hash-ref winner-score game)))
 
 (total-score (file->string "input.day2"))
+
+(define (total-score-p2 guide)
+  (let ([games (parse-guide guide)])
+    (apply + (map score-game-p2 games))))
+
+(define (score-game-p2 game)
+  (define what-to-play #hash((("A" "X") . "C") ; lose
+                             (("A" "Y") . "A") ; draw
+                             (("A" "Z") . "B") ; win
+                             (("B" "X") . "A") ; lose
+                             (("B" "Y") . "B") ; draw
+                             (("B" "Z") . "C") ; win
+                             (("C" "X") . "B") ; lose
+                             (("C" "Y") . "C") ; draw
+                             (("C" "Z") . "A") ; win
+                             ))
+
+  (define game-score #hash(("X" . 0)
+                           ("Y" . 3)
+                           ("Z" . 6)))
+  (define shape-score #hash(("A" . 1)
+                            ("B" . 2)
+                            ("C" . 3)))
+  (let ([shape (hash-ref what-to-play game)])
+    (+
+     (hash-ref game-score (second game))
+     (hash-ref shape-score shape))))
+
+(total-score-p2 (file->string "input.day2"))
