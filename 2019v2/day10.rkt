@@ -3,12 +3,12 @@
 
 (module+ test
   (require rackunit)
-  (check-equal? (max-visible ".#..#
+  (check-equal? (cdr (max-visible ".#..#
 .....
 #####
 ....#
-...##") 8)
-  (check-equal? (max-visible "......#.#.
+...##")) 8)
+  (check-equal? (cdr (max-visible "......#.#.
 #..#.#....
 ..#######.
 .#.#.###..
@@ -18,8 +18,8 @@
 .##.#..###
 ##...#..#.
 .#....####
-") 33)
-  (check-equal? (max-visible "#.#...#.#.
+")) 33)
+  (check-equal? (cdr (max-visible "#.#...#.#.
 .###....#.
 .#....#...
 ##.#.#.#.#
@@ -29,8 +29,8 @@
 ..##....##
 ......#...
 .####.###.
-") 35)
-  (check-equal? (max-visible ".#..#..###
+")) 35)
+  (check-equal? (cdr (max-visible ".#..#..###
 ####.###.#
 ....###.#.
 ..###.##.#
@@ -40,7 +40,7 @@
 #..#.#.###
 .##...##.#
 .....#.#..
-") 41)
+")) 41)
   (check-equal? (max-visible ".#..##.###...#######
 ##.############..##.
 .#.######.########.#
@@ -61,7 +61,7 @@
 .#.#.###########.###
 #.#.#.#####.####.###
 ###.##.####.##.#..##
-") 210)
+") (cons (point 11 13) 210))
 )
 
 ; 1. parse input for list of asteroid locations
@@ -84,12 +84,15 @@
   (let ([r (sqrt (+ (sqr (point-x p))
                     (sqr (point-y p))))]
         [theta (if (= (point-x p) 0)
-                   (/ pi 2)
+                   (* (sgn (point-y p)) (/ pi 2))
                    (atan (/ (point-y p) (point-x p))))])
     (polar r (radians->degrees (cond
                                  [(< (point-x p) 0) (+ theta pi)]
                                  [(< (point-y p) 0) (+ theta (* 2 pi))]
                                  [else theta])))))
+(define (to-point p)
+  (point (exact-round (* (polar-r p) (cos (degrees->radians (polar-theta p)))))
+         (exact-round (* (polar-r p) (sin (degrees->radians (polar-theta p)))))))
 
 (define (point-rel p origin)
   (point (- (point-x p) (point-x origin))
@@ -115,10 +118,52 @@
       (cons asteroid (eval-asteroid asteroid (remove asteroid asteroids))))))
 
 (define (max-visible img-str)
-  (apply max (map cdr (asteroids-visible img-str))))
+  (for/fold ([res #f])
+            ([vis (in-list (asteroids-visible img-str))])
+    (if (and res (> (cdr res) (cdr vis)))
+        res
+        vis)))
 
 (max-visible (file->string "input.day10"))
 
 ; part 2
 
 ; order closest asteroids before removing from set
+; start with theta=270
+
+(define (make-radius-polar-hash station asteroids)
+  (for/fold ([res (make-immutable-hash)])
+            ([asteroid (map (lambda (x) (to-polar (point-rel x station)))
+                            asteroids)])
+    (let ([existing (hash-ref res (polar-theta asteroid) '())])
+      (hash-set res (polar-theta asteroid) (cons asteroid existing)))))
+
+(define (remove-n asteroids n)
+  ; this method just pulls the first  off the first pair and moves it to the end
+  ; asteroids is list of (theta polar ...) where there may be no points
+  (let* ([top (car asteroids)]
+         [bottom (cdr asteroids)]
+         [theta (car top)]
+         [points (cdr top)])
+    (cond
+      [(empty? points) (remove-n bottom n)]
+      [(= n 0) (car points)]
+      [else (remove-n (append bottom (cons theta (cdr points))) (- n 1))])
+  ))
+
+(define (to-ordered-polar-alist hsh)
+  (let ([lst (sort (hash->list hsh) < #:key (lambda (x) (if (< (car x) 270)
+                                                            (+ (car x) 360)
+                                                            (car x))))])
+    lst))
+
+(define (part2 img-str n)
+  (let* ([station (car (max-visible img-str))]
+         [asteroids (remove station (parse-image img-str))])
+    (point-rel
+     (to-point (remove-n (to-ordered-polar-alist (make-radius-polar-hash station asteroids))
+                         n))
+     (point-rel (point 0 0) station))))
+
+(let ([res (part2 (file->string "input.day10") 199)])
+  (+ (point-y res) (* (point-x res) 100)))
