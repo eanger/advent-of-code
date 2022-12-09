@@ -116,7 +116,21 @@ $ ls
 (define (sum-dirs-under-100k str)
   (let ([h (make-hash)])
     (sum-contents (to-directory str) h)
-    (apply + (filter (lambda (x) (<= x 100000)) (hash-values h)))))
+    (println
+     (apply + (filter (lambda (x) (<= x 100000)) (hash-values h))))
+    h))
 
 
-(sum-dirs-under-100k (file->string "input.day7"))
+(define p1
+  (sum-dirs-under-100k (file->string "input.day7")))
+
+(define (p2 p1)
+  (let* ([sorted (sort (hash->list p1)
+                       >
+                       #:key cdr)]
+         [root (car sorted)]
+         [others (cdr sorted)]
+         [needed (+ (- 30000000 70000000) (cdr root))])
+    (cdr (last (takef others (lambda (x) (> (cdr x) needed)))))))
+
+(p2 p1)
