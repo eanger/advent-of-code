@@ -68,3 +68,44 @@
             0)))))
 
 (count-visible (file->string "input.day8"))
+
+; part 2
+; (length (takef others (lambda (x) (<= x cur))))
+; do above for right and (reverse left)
+
+(define (take-visible others cur)
+  (if (empty? others)
+      '()
+      (let ([v (car others)]
+            (o (cdr others)))
+        (if (< v cur)
+            (cons v (take-visible o cur))
+            (list v)))))
+
+(define (visible-trees cur left right)
+  (* (length (take-visible left cur))
+     (length (take-visible right cur))))
+
+(define (get-count-visible left right)
+  ; car right is candidate
+  (if (empty? right)
+      '()
+      (let ([cur (car right)]
+            [others (cdr right)])
+        (cons
+         (visible-trees cur left others)
+         (get-count-visible (cons cur left) others)))))
+
+(define (count-visible-trees str)
+  (let-values ([(r c) (to-rows-and-cols str)])
+    (let* ([vis-horiz (map (lambda (x) (get-count-visible '() x)) r)]
+           [vis-vert-T (map (lambda (x) (get-count-visible '() x)) c)]
+           [vis-vert (apply map list vis-vert-T)])
+      (apply max (for/list ([h-line (in-list vis-horiz)]
+                            [v-line (in-list vis-vert)]
+                            #:when #t
+                            [h (in-list h-line)]
+                            [v (in-list v-line)])
+                   (* h v))))))
+
+(count-visible-trees (file->string "input.day8"))
