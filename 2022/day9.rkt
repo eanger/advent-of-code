@@ -43,7 +43,26 @@ R 2")
         (list tail)
         (cons tail (tail-visits head (loc-add move tail))))))
 
-(define (do-move move-str head tail)
+
+;; for each increment, move head and propagate moves
+;; for/last?
+(define (do-move2 move-str head knots)
+  (let* ([dir (first (string-split move-str " "))]
+         [inc (second (string-split moves-str " "))]
+         [inc-loc (match dir
+                     ["U" (loc 0 inc)]
+                     ["D" (loc 0 (- inc))]
+                     ["R" (loc inc 0)]
+                     ["L" (loc (- inc) 0)])])
+    (for*/fold ([h (loc-add head inc-loc)]
+                [res '()])
+               ([_ (in-range inc)]
+                [knot knots])
+      (tail-visits h knot)
+  0)
+
+(define (do-move move-str head knots)
+  ;; returns new head and list of list of visited locations
   (let* ([words (string-split move-str " ")]
          [dir (first words)]
          [inc (string->number (second words))]
@@ -52,19 +71,47 @@ R 2")
                      ["D" (loc-add head (loc 0 (- inc)))]
                      ["R" (loc-add head (loc inc 0))]
                      ["L" (loc-add head (loc (- inc) 0))])])
-    (values new-head (reverse (tail-visits new-head tail)))))
+    (let-values ([(_ result) ;; 'result' is the list of lists of moves
+                  (for/fold ([h new-head]
+                             [res '()])
+                            ([knot knots])
+                    (let ([visits (reverse (tail-visits h knot))])
+                      (values (car visits) (cons visits res))))])
+      (values new-head (reverse result)))))
 
 ;; for each move, append moves to list
 ;; fold?
 ;; head of tail-moves is where tail should start for next move
 ;; if we need to do another move, pop it off the list
 (define (all-tail-moves moves-str)
+  ;; TODO move by one increment at a time instead of full step
   (for/fold ([head (loc 0 0)]
-             [tail-moves (list (loc 0 0))])
+             [tail-moves (make-list 9 (list (loc 0 0)))])
             ([move (string-split moves-str "\n")])
-    (let-values ([(new-head new-tails) (do-move move head (car tail-moves))])
+    (let-values ([(new-head new-tails) (do-move move head (map car tail-moves))])
       (values new-head
-              (append new-tails (cdr tail-moves))))))
+              (map append new-tails (map cdr tail-moves))))))
 
-(let-values ([(_ tail-moves) (all-tail-moves (file->string "input.day9"))])
-  (set-count (list->set tail-moves)))
+(define (count-moves str knot-idx)
+  (let-values ([(_ tail-moves) (all-tail-moves str)])
+    (set-count (list->set (list-ref tail-moves knot-idx)))))
+
+; part 2
+; keep list of knots (including head)
+; apply moves one by one? down the line
+
+(define test2 "R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20")
+
+;; (count-moves (file->string "input.day9") 0)
+;; (count-moves (file->string "input.day9") 8)
+;; (count-moves test2 8)
+;; (all-tail-moves (file->string "input.day9"))
+
+(do-move "R 4" (loc 0 0) (list (loc 0 0) (loc 0 0) (loc 0 0) (loc 0 0)))
