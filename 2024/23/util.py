@@ -1,0 +1,1 @@
+/Users/ekalkanger/personal/advent-of-code/2024/util.py

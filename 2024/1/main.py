@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import util
+
 example = """3   4
 4   3
 2   5
@@ -8,6 +10,7 @@ example = """3   4
 3   3"""
 
 example_result = 11
+
 
 def part1(inp):
     lines = inp.splitlines()
@@ -26,16 +29,15 @@ def part1(inp):
         res += abs(x-y)
     return res
 
-assert(part1(example) == example_result)
 
-with open('input.day1', 'r') as f:
+assert(part1(example) == example_result)
+with open('input', 'r') as f:
     inp = f.read()
     res = part1(inp)
     print(res)
 
 
 example2_result = 31
-
 def part2(inp):
     lines = inp.splitlines()
     left = []
@@ -58,9 +60,11 @@ def part2(inp):
             res += v*occurs[v]
     return res
 
+
 assert(part2(example) == example2_result)
 
-with open('input.day1', 'r') as f:
+
+with open('input', 'r') as f:
     inp = f.read()
     res = part2(inp)
     print(res)
