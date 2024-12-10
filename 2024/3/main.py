@@ -18,47 +18,56 @@ def parse_num(inp):
     return ''.join(res) if res != [] else None
 
 
-def parse(inp, res):
+def parse_exp(inp):
     if inp == '':
-        return res
+        return None, 1
 
     idx = 0
     if parse_text(inp, "mul(") != "mul(":
-        parse(inp[1:], res)
+        return None, 1
     idx += 4
     n1 = parse_num(inp[idx:])
     if not n1:
-        parse(inp[1:], res)
+        return None, 1
     idx += len(n1)
     if parse_text(inp[idx:], ",") != ",":
-        parse(inp[1:], res)
+        return None, 1
     idx += 1
     n2 = parse_num(inp[idx:])
     if not n2:
-        parse(inp[1:], res)
+        return None, 1
     idx += len(n2)
     if parse_text(inp[idx:], ")") != ")":
-        parse(inp[1:], res)
+        return None, 1
     idx += 1
 
-    res.append((int(n1), int(n2)))
-    parse(inp[idx:], res)
+    return (int(n1), int(n2)), idx
 
 
-print(parse("mul(1,4)", []))
+def parse(inp):
+    idx = 0
+    length = len(inp)
+    res = []
+    while idx < length:
+        p, n = parse_exp(inp[idx:])
+        if p:
+            res.append(p)
+        idx += n
+    return res
 
 
 def part1(inp):
     # recursive descent parsing?
     # given string and index, parse expectations or abort
+    res = parse(inp)
+    return sum(x * y for (x, y) in res)
 
-    #
-    pass
 
 def part2(inp):
     pass
 
 
 # ------------------------------------------------
-part1(part1_example)
+print(part1(part1_example))
+print(part1(util.input_str()))
 part2(part1_example)
