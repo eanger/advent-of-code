@@ -3,14 +3,27 @@
 import util
 
 
-def part1():
+part1_example = """MMMSXXMASM
+MSAMXMSMSA
+AMXSXMAAMM
+MSAMASMSMX
+XMASAMXAMM
+XXAMMXXAMA
+SMSMSASXSS
+SAXAMASAAA
+MAMMMXMMMM
+MXMXAXMASX"""
+part2_example = ''
+
+
+def part1(inp):
     pass
 
 
-def part2():
+def part2(inp):
     pass
 
 
 # ------------------------------------------------
-part1()
-part2()
+print(part1(part1_example))
+print(part2(part2_example))
