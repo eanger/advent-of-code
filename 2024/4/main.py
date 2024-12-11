@@ -14,7 +14,7 @@ SAXAMASAAA
 MAMMMXMMMM
 MXMXAXMASX"""
 
-part2_example = ''
+part2_example = part1_example
 
 
 class World():
@@ -43,6 +43,20 @@ def num_xmas(world, x, y):
     return res
 
 
+def is_x_mas(world, x, y):
+    # only x-mas if:
+    # spot is 'A' and
+    # spot + 1,1 is M and spot + -1,-1 is S or
+    # spot + 1,1 is S and spot + -1,-1 is M and
+    # spot + 1,-1 is M and spot + -1,1 is S or
+    # spot + 1,-1 is S and spot + -1,1 is M or
+    return world.get(x, y) == 'A' and \
+        ((world.get(x + 1, y + 1) == 'M' and world.get(x - 1, y - 1) == 'S') or \
+         (world.get(x + 1, y + 1) == 'S' and world.get(x - 1, y - 1) == 'M')) and \
+        ((world.get(x + 1, y - 1) == 'M' and world.get(x - 1, y + 1) == 'S') or \
+         (world.get(x + 1, y - 1) == 'S' and world.get(x - 1, y + 1) == 'M'))
+
+
 def part1(inp):
     # walk through each location
     # if it starts with X, walk in each cardinal direction until the edge or until the string doesn't match
@@ -55,10 +69,17 @@ def part1(inp):
 
 
 def part2(inp):
-    pass
+    world = World(inp)
+    res = 0
+    for y in range(world.length):
+        for x in range(world.width):
+            if is_x_mas(world, x, y):
+                res += 1
+    return res
 
 
 # ------------------------------------------------
 print(part1(part1_example))
 print(part1(util.input_str()))
 print(part2(part2_example))
+print(part2(util.input_str()))
