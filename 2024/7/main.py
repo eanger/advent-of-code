@@ -49,11 +49,29 @@ def part1(inp):
     return res
 
 
+def concat_op(a, b):
+    return int(str(a) + str(b))
+
+
 def part2(inp):
-    pass
+    lines = inp.splitlines()
+    equations = [parse(x) for x in lines]
+    res = 0
+    for value, numbers in equations:
+        all_ops = itertools.product([operator.add, operator.mul, concat_op],
+                                    repeat=len(numbers) -1)
+        for this_op in list(all_ops):
+            r = numbers[0]
+            for n, o in zip(numbers[1:], this_op):
+                r = o(r, n)
+            if r == value:
+                res += r
+                break
+    return res
 
 
 # ------------------------------------------------
 print(part1(part1_example))
 print(part1(util.input_str()))
 print(part2(part2_example))
+print(part2(util.input_str()))
