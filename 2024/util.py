@@ -48,6 +48,14 @@ class Grid():
             return None
         return self._grid[y][x]
 
+    def set(self, val, x, y=None):
+        if not y:
+            if not isinstance(x, Point):
+                raise TypeError
+            y = x.y
+            x = x.x
+        self._grid[y][x] = val
+
     def find(self, val):
         for y in range(self.length):
             for x in range(self.width):
