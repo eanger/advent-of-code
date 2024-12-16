@@ -22,7 +22,7 @@ class Point():
 
     def __eq__(self, o):
         return self.x == o.x and self.y == o.y
-    
+
     def __hash__(self):
         """Overrides the default implementation"""
         return hash(repr(self))
@@ -37,7 +37,7 @@ class Grid():
         return '\n'.join(''.join(y) for y in self._grid)
 
     def get(self, x, y=None):
-        if not y:
+        if y is None:
             if not isinstance(x, Point):
                 raise TypeError
             y = x.y
