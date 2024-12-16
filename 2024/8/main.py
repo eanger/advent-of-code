@@ -17,33 +17,15 @@ part1_example = """............
 .........A..
 ............
 ............"""
-part2_example = ''
+part2_example = part1_example
 
 
-def part1(inp):
+def part1(inp, anodes):
     '''
     make lists of each antenna per frequency
     for each pair in each list:
         calculate their antinodes
         if valid, add to result set
-
-  012345678901
-0 ......#....#
-1 ...#....0...
-2 ....#0....#.
-3 ..#....0....
-4 ....0....#..
-5 .#....A.....
-6 ...#........
-7 #......#....
-8 ........A...
-9 .........A..
-0 ..........#.
-1 ..........#.
-
-
-    min_x - dx, min_y - dy
-    max_x + dx, max_y + dy
     '''
     grid = util.Grid(inp)
     all_antennas = collections.defaultdict(list)
@@ -60,7 +42,7 @@ def part1(inp):
     return len(res)
 
 
-def anodes(grid, a, b):
+def anodes_p1(grid, a, b):
     anode_1 = a + (a - b)
     anode_2 = b + (b - a)
     res = []
@@ -71,11 +53,27 @@ def anodes(grid, a, b):
     return res
 
 
-def part2(inp):
-    pass
+def anodes_p2(grid, a, b):
+    '''
+    keep adding until out of bounds
+    include the points themselves
+    '''
+    d1 = a - b
+    d2 = b - a
+    res = []
+    cur = a
+    while grid.get(cur) != None:
+        res.append(cur)
+        cur += d1
+    cur = b
+    while grid.get(cur) != None:
+        res.append(cur)
+        cur += d2
+    return res
 
 
 # ------------------------------------------------
-print(part1(part1_example))
-print(part1(util.input_str()))
-print(part2(part2_example))
+print(part1(part1_example, anodes_p1))
+print(part1(util.input_str(), anodes_p1))
+print(part1(part2_example, anodes_p2))
+print(part1(util.input_str(), anodes_p2))
