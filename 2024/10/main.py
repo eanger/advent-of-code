@@ -50,10 +50,30 @@ def part1(inp):
 
 
 def part2(inp):
-    pass
+    grid = util.Grid(inp, int)
+
+    def dfs(loc, length, prior):
+        val = grid.get(loc)
+        if val is None:
+            return 0
+        if val != prior + 1:
+            return 0
+        if val == 9:
+            return 1
+
+        length += 1
+        return dfs(loc + util.Point(-1, 0), length, val) + \
+            dfs(loc + util.Point(1, 0), length, val) + \
+            dfs(loc + util.Point(0, -1), length, val) + \
+            dfs(loc + util.Point(0, 1), length, val)
+
+    trailheads = grid.find_all(0)
+    res = [dfs(t, 0, -1) for t in trailheads]
+    return sum(res)
 
 
 # ------------------------------------------------
 print(part1(part1_example))
 print(part1(util.input_str()))
 print(part2(part2_example))
+print(part2(util.input_str()))
