@@ -27,14 +27,15 @@ class Point():
         """Overrides the default implementation"""
         return hash(repr(self))
 
+
 class Grid():
-    def __init__(self, inp):
-        self._grid = [[x for x in y] for y in inp.splitlines()]
+    def __init__(self, inp, parse_func=lambda x: x):
+        self._grid = [[parse_func(x) for x in y] for y in inp.splitlines()]
         self.length = len(self._grid)
         self.width = len(self._grid[0])
 
     def __repr__(self):
-        return '\n'.join(''.join(y) for y in self._grid)
+        return '\n'.join(''.join(str(y)) for y in self._grid)
 
     def get(self, x, y=None):
         if y is None:
@@ -62,3 +63,11 @@ class Grid():
                 if self._grid[y][x] == val:
                     return Point(x, y)
         raise ValueError
+
+    def find_all(self, val):
+        res = []
+        for y in range(self.length):
+            for x in range(self.width):
+                if self._grid[y][x] == val:
+                    res.append(Point(x, y))
+        return res
